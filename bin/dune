@@ -1,0 +1,6 @@
+(executable
+ (public_name earley_parser)
+ (name main)
+ (libraries core earley_parser)
+ (preprocess
+  (pps ppx_jane)))
