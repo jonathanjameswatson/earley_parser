@@ -23,6 +23,8 @@ let handle_input input =
         , [ [ Meta_symbol.T "can" ]
           ; [ Meta_symbol.T "fish" ]
           ; [ Meta_symbol.T "rivers" ]
+          ; [ Meta_symbol.T "they" ]
+          ; [ Meta_symbol.T "december" ]
           ] )
       ; Non_terminal.P, [ [ Meta_symbol.T "in" ] ]
       ; Non_terminal.V, [ [ Meta_symbol.T "can" ]; [ Meta_symbol.T "fish" ] ]
@@ -45,10 +47,13 @@ let handle_input input =
         , ([], [ Meta_symbol.NT Non_terminal.NP; Meta_symbol.NT Non_terminal.VP ]) )
       , (0, 0) )
   in
-  let result = Chart.fill_chart chart in
-  Out_channel.print_string
-    (if result then "Sentence in toy grammar" else "Sentence not in toy grammar");
-  Out_channel.newline stdout
+  let full_chart = Chart.fill_chart chart in
+  (* Out_channel.print_string "Chart:";
+  Out_channel.newline stdout;
+  Sexp.output_hum stdout (Chart.sexp_of_t full_chart);
+  Out_channel.newline stdout; *)
+  let parse_count = Chart.count_parses full_chart in
+  Out_channel.printf "Sentence has %d parse/s in the toy grammar.\n" parse_count
 ;;
 
 let command =

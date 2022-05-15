@@ -32,13 +32,11 @@ let scan (set, sentence, production_rules, end_non_terminal) =
       ~f:(fun current_set ((non_terminal, (prefix_string, postfix_string)), (i, j)) ->
         match prefix_string, postfix_string with
         | [], Meta_symbol.T terminal :: postfix_string_remainder ->
-          if j < Array.length sentence && Terminal.compare sentence.(j + 1) terminal = 0
+          if j < Array.length sentence && Terminal.compare sentence.(j) terminal = 0
           then
             Set.add
               current_set
-              ( ( non_terminal
-                , (prefix_string @ [ Meta_symbol.T terminal ], postfix_string_remainder)
-                )
+              ( (non_terminal, ([ Meta_symbol.T terminal ], postfix_string_remainder))
               , (i, j + 1) )
           else current_set
         | _ -> current_set)
@@ -51,21 +49,21 @@ let complete (set, sentence, production_rules, end_non_terminal) =
   ( Set.fold
       set
       ~init:set
-      ~f:(fun set_1 ((non_terminal_1, (prefix_string_1, postfix_string)), (i, k_1)) ->
-        match postfix_string with
+      ~f:(fun set_1 ((non_terminal_1, (prefix_string, postfix_string_1)), (i, k_1)) ->
+        match postfix_string_1 with
         | Meta_symbol.NT non_terminal_2 :: postfix_string_remainder ->
           Set.fold
-            set
-            ~init:set
-            ~f:(fun set_2 ((non_terminal_3, (prefix_string_2, _)), (k_2, j)) ->
-              match prefix_string_2 with
+            set_1
+            ~init:set_1
+            ~f:(fun set_2 ((non_terminal_3, (_, postfix_string_2)), (k_2, j)) ->
+              match postfix_string_2 with
               | [] ->
                 if k_1 = k_2 && Non_terminal.compare non_terminal_2 non_terminal_3 = 0
                 then
                   Set.add
                     set_2
                     ( ( non_terminal_1
-                      , ( prefix_string_1 @ [ Meta_symbol.NT non_terminal_2 ]
+                      , ( prefix_string @ [ Meta_symbol.NT non_terminal_2 ]
                         , postfix_string_remainder ) )
                     , (i, j) )
                 else set_2
@@ -76,26 +74,24 @@ let complete (set, sentence, production_rules, end_non_terminal) =
   , end_non_terminal )
 ;;
 
-let is_done (set, sentence, _, end_non_terminal) =
-  Set.exists set ~f:(fun ((non_terminal, (_, postfix_string)), (i, j)) ->
-      match postfix_string with
-      | [] ->
-        i = 0
-        && j = Array.length sentence - 1
-        && Non_terminal.compare non_terminal end_non_terminal = 0
-      | _ -> false)
-;;
-
 let update chart : t = complete (scan (predict chart))
 
 let fill_chart chart =
   let rec fill_chart_util chart last_length =
     let new_chart = update chart in
-    is_done new_chart
-    ||
     let set, _, _, _ = new_chart in
     let new_length = Set.length set in
-    if new_length = last_length then false else fill_chart_util new_chart new_length
+    if new_length = last_length then new_chart else fill_chart_util new_chart new_length
   in
   fill_chart_util chart 0
+;;
+
+let count_parses (set, sentence, _, end_non_terminal) =
+  Set.count set ~f:(fun ((non_terminal, (_, postfix_string)), (i, j)) ->
+      match postfix_string with
+      | [] ->
+        i = 0
+        && j = Array.length sentence
+        && Non_terminal.compare non_terminal end_non_terminal = 0
+      | _ -> false)
 ;;
