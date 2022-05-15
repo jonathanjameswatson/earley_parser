@@ -58,8 +58,7 @@ let handle_input input =
 
 let command =
   Command.basic
-    ~summary:
-      "Output whether a given sentence is in the language defined by the toy grammar"
+    ~summary:"Output how many parses a given sentence has from the toy grammar"
     Command.Let_syntax.(
       let%map_open input = anon ("input" %: string) in
       fun () -> handle_input input)

@@ -15,7 +15,7 @@ Run `dune build @fmt` and `dune promote` to format the code
 ## Usage
 
 ```txt
-Output whether a given sentence is in the language defined by the toy grammar
+Output how many parses a given sentence has from the toy grammar
 
   earley_parser INPUT
 === flags ===
