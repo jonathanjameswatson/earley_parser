@@ -48,17 +48,22 @@ let handle_input input =
       , (0, 0) )
   in
   let full_chart = Chart.fill_chart chart in
-  (* Out_channel.print_string "Chart:";
+  (*
+  Out_channel.print_string "Chart:";
   Out_channel.newline stdout;
   Sexp.output_hum stdout (Chart.sexp_of_t full_chart);
-  Out_channel.newline stdout; *)
-  let parse_count = Chart.count_parses full_chart in
-  Out_channel.printf "Sentence has %d parse/s in the toy grammar.\n" parse_count
+  Out_channel.newline stdout;
+  *)
+  let parses = Chart.get_parses full_chart in
+  Out_channel.printf "Parses (%d):\n" (List.length parses);
+  List.fold parses ~init:() ~f:(fun _unit parse ->
+      Sexp.output_hum stdout (Parse.sexp_of_t parse);
+      Out_channel.newline stdout)
 ;;
 
 let command =
   Command.basic
-    ~summary:"Output how many parses a given sentence has from the toy grammar"
+    ~summary:"Output every parse a given sentence has from the toy grammar"
     Command.Let_syntax.(
       let%map_open input = anon ("input" %: string) in
       fun () -> handle_input input)

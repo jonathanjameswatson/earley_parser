@@ -15,7 +15,7 @@ Run `dune build @fmt` and `dune promote` to format the code
 ## Usage
 
 ```txt
-Output how many parses a given sentence has from the toy grammar
+Output every parse a given sentence has from the toy grammar
 
   earley_parser INPUT
 === flags ===

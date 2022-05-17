@@ -52,14 +52,10 @@ let predict (set, sentence, production_rules, end_non_terminal, histories) =
 ;;
 
 let scan (set, sentence, production_rules, end_non_terminal, histories) =
-  let new_set, new_histories =
-    Set.fold
+  ( Set.fold
       set
-      ~init:(set, histories)
-      ~f:(fun
-           (current_set, current_histories)
-           (((non_terminal, (prefix_string, postfix_string)), (i, j)) as edge)
-         ->
+      ~init:set
+      ~f:(fun current_set ((non_terminal, (prefix_string, postfix_string)), (i, j)) ->
         match prefix_string, postfix_string with
         | [], Meta_symbol.T terminal :: postfix_string_remainder ->
           if j < Array.length sentence && Terminal.compare sentence.(j) terminal = 0
@@ -68,18 +64,13 @@ let scan (set, sentence, production_rules, end_non_terminal, histories) =
               ( (non_terminal, ([ Meta_symbol.T terminal ], postfix_string_remainder))
               , (i, j + 1) )
             in
-            ( Set.add current_set new_edge
-            , Map.set
-                current_histories
-                ~key:new_edge
-                ~data:
-                  (match Map.find current_histories (edge :> Edge.t) with
-                  | Some history_set -> history_set
-                  | None -> Set.singleton (module X) []) ))
-          else current_set, current_histories
-        | _ -> current_set, current_histories)
-  in
-  new_set, sentence, production_rules, end_non_terminal, new_histories
+            Set.add current_set new_edge)
+          else current_set
+        | _ -> current_set)
+  , sentence
+  , production_rules
+  , end_non_terminal
+  , histories )
 ;;
 
 let complete (set, sentence, production_rules, end_non_terminal, histories) =
@@ -148,7 +139,7 @@ let fill_chart chart =
   fill_chart_util chart 0
 ;;
 
-let count_parses (set, sentence, _, end_non_terminal, histories) =
+let get_parses (set, sentence, _, end_non_terminal, histories) =
   match
     Set.find set ~f:(fun ((non_terminal, (_, postfix_string)), (i, j)) ->
         match postfix_string with
@@ -158,9 +149,35 @@ let count_parses (set, sentence, _, end_non_terminal, histories) =
           && Non_terminal.compare non_terminal end_non_terminal = 0
         | _ -> false)
   with
-  | None -> 0
+  | None -> []
   | Some edge ->
-    (match Map.find histories edge with
-    | None -> 0
-    | Some paths -> Set.length paths)
+    let rec count_parses_util (((non_terminal, (prefix_string, _)), _) as edge) =
+      match Map.find histories edge with
+      | None ->
+        (match prefix_string with
+        | Meta_symbol.T terminal :: _ -> [ Parse.T terminal ]
+        | _ -> [])
+      | Some edge_paths ->
+        Set.fold edge_paths ~init:[] ~f:(fun parses edge_path ->
+            List.append
+              parses
+              (let path_parse_lists =
+                 List.fold edge_path ~init:[ [] ] ~f:(fun path_parse_lists edge ->
+                     let inner_parses = count_parses_util edge in
+                     List.fold
+                       path_parse_lists
+                       ~init:[]
+                       ~f:(fun path_parse_lists path_parse_list ->
+                         List.append
+                           path_parse_lists
+                           (List.fold
+                              inner_parses
+                              ~init:[]
+                              ~f:(fun path_parse_lists inner_parse ->
+                                (inner_parse :: path_parse_list) :: path_parse_lists))))
+               in
+               List.map path_parse_lists ~f:(fun path_parse_list ->
+                   Parse.NT (non_terminal, path_parse_list))))
+    in
+    count_parses_util edge
 ;;
