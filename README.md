@@ -1,6 +1,6 @@
 # Earley parser
 
-Earley parse written for formal models of language supervision work.
+Earley parser for context-free grammars, written for formal models of language supervision work
 
 ## Installation
 
